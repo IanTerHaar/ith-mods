@@ -1,9 +1,11 @@
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 type Notice = { color: string; text: string }
 
 const AFTER_MS: Record<string, number> = { always: 0, '30s': 30_000, '1m': 60_000, '2m': 120_000, '5m': 300_000 }
 const QUESTION = 'AskUserQuestion'
+// a popup outlives the default four seconds: long enough to catch from the corner of an eye
+const POPUP_MS = 8_000
 
 const took = (ms: number): string => {
   const seconds = Math.round(ms / 1000)
@@ -21,9 +23,15 @@ const subject = (tool: string, input: unknown): string => {
   return tool
 }
 
+// the engine's toast: a small box over the transcript's top right corner, where the band's box is
+// out of sight (the prompt and its band give way to an open dialog)
+const pop = ($: EngineInterface, text: string) => $.ui.toast(text, { timeoutMs: POPUP_MS })
+
 export const register: Register = (on, options) => {
   const side = options?.side === 'left' ? 'flex-start' : 'flex-end'
   const after = AFTER_MS[typeof options?.turnAfter === 'string' ? options.turnAfter : '1m']
+  const hasPopup = options?.show !== 'box'
+  const hasBox = options?.show !== 'popup'
 
   let startedAt = 0
   // calls the rules left to be asked about, by id: a dialog that opens is matched to one of these
@@ -76,7 +84,9 @@ export const register: Register = (on, options) => {
     const input = JSON.stringify(e.tool_input)
     const open = [...unsettled].filter(([id, call]) => call.tool === e.tool_name && !asking.has(id))
     const id = (open.find(([, call]) => call.input === input) ?? open[open.length - 1])?.[0]
-    asking.set(id ?? e.tool_name, `Claude needs permission · ${subject(e.tool_name, e.tool_input)}`)
+    const text = `Claude needs permission · ${subject(e.tool_name, e.tool_input)}`
+    asking.set(id ?? e.tool_name, text)
+    if (hasPopup) pop($, text)
     $.ui.invalidate('ui.render')
     return next(e)
   })
@@ -84,6 +94,7 @@ export const register: Register = (on, options) => {
   on('tool.call', async ($, e, next) => {
     if (e.tool === QUESTION) {
       asking.set(e.tool_use_id, 'Claude asked you a question')
+      if (hasPopup) pop($, 'Claude asked you a question')
       $.ui.invalidate('ui.render')
     }
 
@@ -95,6 +106,7 @@ export const register: Register = (on, options) => {
     if (e.tool !== QUESTION && ran.deny === undefined && ran.isError === true) {
       failed += 1
       lastFailed = subject(e.tool, e)
+      if (hasPopup) pop($, `Tool call failed · ${lastFailed}`)
     }
     $.ui.invalidate('ui.render')
     return ran
@@ -108,11 +120,16 @@ export const register: Register = (on, options) => {
     asking.clear()
     const ms = startedAt > 0 ? (await $.clock.now()) - startedAt : 0
     const length = startedAt > 0 ? ` after ${took(ms)}` : ''
-    if (e.reason === 'error') ended = { color: 'red', text: `Turn stopped on an error${length}` }
-    else if (e.reason === 'refusal') ended = { color: 'red', text: `Turn stopped on a refusal${length}` }
+    const isLong = startedAt > 0 && after !== undefined && ms >= after
     // an interrupted turn was ended by the person, who needs no telling
-    else if (e.reason === 'answer' && startedAt > 0 && after !== undefined && ms >= after) {
-      ended = { color: 'green', text: `Turn finished${length}` }
+    const note: Notice | null =
+      e.reason === 'error' ? { color: 'red', text: `Turn stopped on an error${length}` }
+      : e.reason === 'refusal' ? { color: 'red', text: `Turn stopped on a refusal${length}` }
+      : e.reason === 'answer' && isLong ? { color: 'green', text: `Turn finished${length}` }
+      : null
+    if (note) {
+      ended = note
+      if (hasPopup) pop($, note.text)
     }
     startedAt = 0
     $.ui.invalidate('ui.render')
@@ -121,7 +138,7 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const list = notices()
-    if (e.props.hasSurvey || list.length === 0) return next(e)
+    if (!hasBox || e.props.hasSurvey || list.length === 0) return next(e)
 
     // whatever another plugin (context-bar, usage-limits) drew keeps its row beneath the box
     const below = await next(e)

@@ -1,13 +1,20 @@
 {
   "name": "heads-up",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": { "name": "Ian Ter Haar" },
-  "description": "A boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes",
+  "description": "A popup at the top right and a boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes",
   "userConfig": {
+    "show": {
+      "type": "string",
+      "title": "Show as",
+      "description": "popup: a small box over the top right corner for a few seconds. box: a notice above the prompt that stays until dismissed or your next prompt. both: the popup, and the box as the record of it",
+      "default": "both",
+      "options": ["both", "popup", "box"]
+    },
     "side": {
       "type": "string",
       "title": "Side",
-      "description": "Which edge of the band above the prompt the notice box sits against",
+      "description": "Which edge of the band above the prompt the box sits against; the popup is always at the top right",
       "default": "right",
       "options": ["left", "right"]
     },
