@@ -1,0 +1,1 @@
+{ "name": "context-bar", "version": "0.1.0", "author": { "name": "Ian Ter Haar" }, "description": "Progress bar above the prompt showing context used, e.g. 111.2k / 1M" }

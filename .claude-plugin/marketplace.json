@@ -1,0 +1,11 @@
+{
+  "name": "ith-mods",
+  "owner": { "name": "Ian Ter Haar" },
+  "plugins": [
+    {
+      "name": "context-bar",
+      "source": "./plugins/context-bar",
+      "description": "Context usage progress bar above the prompt, with last-turn delta"
+    }
+  ]
+}
