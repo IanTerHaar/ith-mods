@@ -6,6 +6,11 @@
       "name": "context-bar",
       "source": "./plugins/context-bar",
       "description": "Context usage progress bar above the prompt, with last-turn delta"
+    },
+    {
+      "name": "usage-limits",
+      "source": "./plugins/usage-limits",
+      "description": "5-hour and weekly limit remaining, above the prompt beside context-bar"
     }
   ]
 }

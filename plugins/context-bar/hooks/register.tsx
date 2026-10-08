@@ -45,14 +45,19 @@ export const register: Register = on => {
     const shown = e.props.isWorking ? tokens - base : delta
     const label = e.props.isWorking ? 'this turn' : 'last turn'
     const { Box, Text } = $.ui.resolve(e)
+    // what a plugin beneath drew (usage-limits) sits to the right of the bar
+    const below = await next(e)
 
     return (
-      <Box>
-        <Text color={color}>{bar}</Text>
-        <Text dimColor> {fmt(tokens)} / {fmt(window)} ({context.percent ?? 0}%)</Text>
-        {shown !== null && (
-          <Text dimColor>  {shown < 0 ? '-' : '+'}{fmt(Math.abs(shown))} {label}</Text>
-        )}
+      <Box flexWrap="wrap" columnGap={3}>
+        <Box flexShrink={0}>
+          <Text color={color}>{bar}</Text>
+          <Text dimColor> {fmt(tokens)} / {fmt(window)} ({context.percent ?? 0}%)</Text>
+          {shown !== null && (
+            <Text dimColor>  {shown < 0 ? '-' : '+'}{fmt(Math.abs(shown))} {label}</Text>
+          )}
+        </Box>
+        {below.type !== 'engine' && below}
       </Box>
     )
   })
