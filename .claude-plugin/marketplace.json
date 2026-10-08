@@ -11,6 +11,11 @@
       "name": "usage-limits",
       "source": "./plugins/usage-limits",
       "description": "5-hour and weekly limit remaining, above the prompt beside context-bar"
+    },
+    {
+      "name": "file-tree",
+      "source": "./plugins/file-tree",
+      "description": "File tree of the session cwd in the sidebar, with git status and a shimmer on files Claude touches"
     }
   ]
 }
