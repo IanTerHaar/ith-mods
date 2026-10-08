@@ -16,6 +16,11 @@
       "name": "file-tree",
       "source": "./plugins/file-tree",
       "description": "File tree of the session cwd in the sidebar, with git status and a shimmer on files Claude touches"
+    },
+    {
+      "name": "heads-up",
+      "source": "./plugins/heads-up",
+      "description": "Boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes"
     }
   ]
 }
