@@ -20,7 +20,7 @@
     {
       "name": "heads-up",
       "source": "./plugins/heads-up",
-      "description": "Boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes"
+      "description": "Popup at the top right and a boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes"
     }
   ]
 }

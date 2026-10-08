@@ -10,10 +10,17 @@ const BAND = {
 const NOW = Date.parse('2026-10-08T12:00:00Z')
 
 type World = { tool?: (e: any) => unknown; decision?: 'allow' | 'ask' | 'deny'; hasBand?: boolean }
+// every popup the plugin raised in the running test, oldest first
+let popups: string[] = []
 
 // stands for the engine: a band nothing draws in, and tools that answer as told
 const engine = (on: On, { tool = () => ({ result: 'ok' }), decision = 'allow', hasBand = false }: World = {}) => {
   const clock = mock.clock(on, { now: NOW })
+  popups = []
+  on('ui.toast', (_$: any, e: any) => {
+    popups.push(`${e.text} (${e.timeoutMs})`)
+    return { value: undefined }
+  })
   if (!hasBand) on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'engine', ref: 0 }))
   on('prompt.submit', (_$: any, e: any) => ({ text: e.text, context: e.context }))
   on('tool.check', () => ({ decision }))
@@ -49,6 +56,7 @@ test('says what Claude wants permission for while its dialog is open', async ($,
   await $.tool.call({ tool: 'Bash', command: 'rm -rf   build', tool_use_id: 't1' } as any)
   expect(seen).toBeDefined()
   expect(await text($, /permission/)).toBeUndefined()
+  expect(popups).toEqual(['Claude needs permission · Bash: rm -rf build (8000)'])
 })
 
 test('an ask that no dialog follows stays quiet', async ($, on) => {
@@ -65,6 +73,7 @@ test('an ask that no dialog follows stays quiet', async ($, on) => {
 
   await $.tool.call({ tool: 'Bash', command: 'rm -rf build', tool_use_id: 't1' } as any)
   expect(seen).toBeUndefined()
+  expect(popups).toEqual([])
 })
 
 test('one of two dialogs answered leaves the other up', async ($, on) => {
@@ -101,6 +110,7 @@ test('says Claude asked a question while the question is open', async ($, on) =>
   await $.tool.call({ tool: 'AskUserQuestion', questions: [], tool_use_id: 't1' } as any)
   expect(seen).toBeDefined()
   expect(await text($, /question/)).toBeUndefined()
+  expect(popups).toEqual(['Claude asked you a question (8000)'])
 })
 
 test('counts failed tool calls and names the last, until dismissed', async ($, on) => {
@@ -116,6 +126,7 @@ test('counts failed tool calls and names the last, until dismissed', async ($, o
 
   await ui.press({ key: 'dismiss' })
   expect(await text($, /failed/)).toBeUndefined()
+  expect(popups).toEqual(['Tool call failed · Bash: npm test (8000)', 'Tool call failed · Edit: b.ts (8000)'])
 })
 
 test('a call the person denied is no failure', async ($, on) => {
@@ -140,6 +151,7 @@ test('notes the end of a turn that ran a minute or more, until the next prompt',
 
   await $.prompt.submit({ text: 'next', wait: false } as any)
   expect(await text($, /Turn finished/)).toBeUndefined()
+  expect(popups).toEqual(['Turn finished after 2m 14s (8000)'])
 })
 
 test('a turn that died on an error is noted however short, an interrupted one never', { options: { turnAfter: 'always' } }, async ($, on) => {
@@ -170,6 +182,35 @@ test('a background task reporting back leaves the notices up', async ($, on) => 
   await $.tool.call({ tool: 'Bash', command: 'npm test', tool_use_id: 't1' } as any)
   await $.prompt.submit({ text: '<task-notification>\n<task-id>b1</task-id>\n</task-notification>', wait: false } as any)
   expect(await text($, /failed/)).toBeDefined()
+})
+
+test('a notice still up is not popped again by a later turn', async ($, on) => {
+  const clock = engine(on)
+
+  await $.prompt.submit({ text: 'long one', wait: false } as any)
+  await clock.advance(90_000)
+  await $.turn.complete(ended('answer'))
+  await $.prompt.submit({ text: '<task-notification>\n<task-id>b1</task-id>\n</task-notification>', wait: false } as any)
+  await clock.advance(2_000)
+  await $.turn.complete(ended('answer'))
+  expect(popups).toEqual(['Turn finished after 1m 30s (8000)'])
+  expect(await text($, 'Turn finished after 1m 30s')).toBeDefined()
+})
+
+test('show box: the box alone, no popup', { options: { show: 'box' } }, async ($, on) => {
+  engine(on, { tool: failing })
+
+  await $.tool.call({ tool: 'Bash', command: 'npm test', tool_use_id: 't1' } as any)
+  expect(await text($, /failed/)).toBeDefined()
+  expect(popups).toEqual([])
+})
+
+test('show popup: the popup alone, the band left as it was', { options: { show: 'popup' } }, async ($, on) => {
+  engine(on, { tool: failing })
+
+  await $.tool.call({ tool: 'Bash', command: 'npm test', tool_use_id: 't1' } as any)
+  expect(await text($, /failed/)).toBeUndefined()
+  expect(popups).toEqual(['Tool call failed · Bash: npm test (8000)'])
 })
 
 test('turnAfter never: no finished turn is noted', { options: { turnAfter: 'never' } }, async ($, on) => {
