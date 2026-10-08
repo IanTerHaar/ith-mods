@@ -1,0 +1,22 @@
+{
+  "name": "heads-up",
+  "version": "0.1.0",
+  "author": { "name": "Ian Ter Haar" },
+  "description": "A boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes",
+  "userConfig": {
+    "side": {
+      "type": "string",
+      "title": "Side",
+      "description": "Which edge of the band above the prompt the notice box sits against",
+      "default": "right",
+      "options": ["left", "right"]
+    },
+    "turnAfter": {
+      "type": "string",
+      "title": "Turn finished after",
+      "description": "How long a turn has to run before its end is worth a notice: always notes every turn, never notes none",
+      "default": "1m",
+      "options": ["always", "30s", "1m", "2m", "5m", "never"]
+    }
+  }
+}
