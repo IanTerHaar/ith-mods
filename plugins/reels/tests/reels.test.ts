@@ -77,15 +77,28 @@ test('the reels open in a window of their own while the turn runs, and close whe
 
   await start($)
   expect(open).toBe(1)
+  // through PowerShell, which shows the window and docks it: a quarter of the screen, down its right edge
   expect(windows).toEqual([
     [
-      EDGE,
-      '--app=https://www.instagram.com/reels/',
-      '--user-data-dir=C:/Users/me/.claude/reels/profile',
-      '--window-size=430,900',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--hide-crash-restore-bubble',
+      'powershell',
+      '-NoProfile',
+      '-Command',
+      [
+        'Add-Type -AssemblyName System.Windows.Forms',
+        '$area = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea',
+        '$width = [int]($area.Width * 0.25)',
+        '$left = $area.Right - $width',
+        `Start-Process -Wait -FilePath '${EDGE}' -ArgumentList ` +
+          [
+            `'"--app=https://www.instagram.com/reels/"'`,
+            `'"--user-data-dir=C:/Users/me/.claude/reels/profile"'`,
+            '"--window-position=$left,$($area.Top)"',
+            '"--window-size=$width,$($area.Height)"',
+            `'--no-first-run'`,
+            `'--no-default-browser-check'`,
+            `'--hide-crash-restore-bubble'`,
+          ].join(', '),
+      ].join('; '),
     ],
   ])
 
@@ -217,7 +230,7 @@ test('Chrome where there is no Edge', async ($, on) => {
   engine(on, { installed: [CHROME] })
 
   await start($)
-  expect(windows[0]?.[0]).toBe(CHROME)
+  expect(windows[0]?.[3]).toContain(`-FilePath '${CHROME}' `)
 })
 
 test('no browser: says so once, and opens nothing', async ($, on) => {
@@ -234,14 +247,52 @@ test('browserPath and url: that browser, that page', { options: { browserPath: '
   engine(on, { installed: [] })
 
   await start($)
-  expect(windows[0]?.slice(0, 2)).toEqual(['D:/brave.exe', '--app=https://www.youtube.com/shorts'])
+  expect(windows[0]?.[3]).toContain(`-FilePath 'D:/brave.exe' -ArgumentList '"--app=https://www.youtube.com/shorts"', `)
 })
 
 test('a url that is no web page falls back to the reels', { options: { url: '--remote-debugging-port=9222' } }, async ($, on) => {
   engine(on)
 
   await start($)
-  expect(windows[0]?.[1]).toBe('--app=https://www.instagram.com/reels/')
+  expect(windows[0]?.[3]).toContain(`'"--app=https://www.instagram.com/reels/"'`)
+})
+
+test('a url that would end its own argument falls back too', { options: { url: `https://example.com/"' -Wait` } }, async ($, on) => {
+  engine(on)
+
+  await start($)
+  expect(windows[0]?.[3]).toContain(`'"--app=https://www.instagram.com/reels/"'`)
+})
+
+test('side and width: a third of the screen, down its left edge', { options: { side: 'left', width: '1/3' } }, async ($, on) => {
+  engine(on)
+
+  await start($)
+  expect(windows[0]?.[3]).toContain('$width = [int]($area.Width * 0.3333333333333333); $left = $area.Left; ')
+})
+
+test('a path with a quote in it is one PowerShell string still', { options: { browserPath: "C:/Users/O'Brien/chrome.exe" } }, async ($, on) => {
+  engine(on, { installed: [] })
+
+  await start($)
+  expect(windows[0]?.[3]).toContain(`-FilePath 'C:/Users/O''Brien/chrome.exe' `)
+})
+
+test('off Windows: the browser itself, at a size of its own', { options: { browserPath: '/usr/bin/chromium' } }, async ($, on) => {
+  engine(on, { installed: [] })
+
+  await start($)
+  expect(windows).toEqual([
+    [
+      '/usr/bin/chromium',
+      '--app=https://www.instagram.com/reels/',
+      '--user-data-dir=C:/Users/me/.claude/reels/profile',
+      '--window-size=430,900',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--hide-crash-restore-bubble',
+    ],
+  ])
 })
 
 test('the Claude browser pane where the session has one: a tab that goes blank, and is opened again', async ($, on) => {

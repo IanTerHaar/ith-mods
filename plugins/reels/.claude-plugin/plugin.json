@@ -1,6 +1,6 @@
 {
   "name": "reels",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": { "name": "Ian Ter Haar" },
   "description": "Instagram Reels open while Claude is working, and close when the turn ends or Claude is waiting on you",
   "userConfig": {
@@ -10,6 +10,20 @@
       "description": "auto: the Claude desktop app's browser pane where the session has one, a window of its own elsewhere (the terminal has no pane). window: always the window",
       "default": "auto",
       "options": ["auto", "window"]
+    },
+    "side": {
+      "type": "string",
+      "title": "Side",
+      "description": "Which edge of the main screen the window is docked against, top to bottom (Windows)",
+      "default": "right",
+      "options": ["left", "right"]
+    },
+    "width": {
+      "type": "string",
+      "title": "Width",
+      "description": "How much of the screen's width the window takes (Windows)",
+      "default": "1/4",
+      "options": ["1/5", "1/4", "1/3", "1/2"]
     },
     "url": {
       "type": "string",
