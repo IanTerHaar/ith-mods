@@ -13,13 +13,23 @@ const BROWSERS = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
 ]
-// a phone's shape, which is a reel's
+// how much of the screen's width the window takes, by the option's spelling
+const SHARES: Record<string, number> = { '1/5': 1 / 5, '1/4': 1 / 4, '1/3': 1 / 3, '1/2': 1 / 2 }
+// a phone's shape, which is a reel's: where the plugin cannot ask how large the screen is
 const WINDOW_SIZE = '430,900'
+const FLAGS = [
+  '--no-first-run',
+  '--no-default-browser-check',
+  // ending the process is no crash worth offering to restore
+  '--hide-crash-restore-bubble',
+]
 
 type Close = () => Promise<void>
 
 type Reels = {
   url: string
+  side: 'left' | 'right'
+  share: number
   hasPane: boolean
   browserPath: string
   isTurnRunning: boolean
@@ -41,6 +51,32 @@ const tabOf = (result: McpToolResult): unknown => {
   if (id === undefined) return undefined
   return /^\d+$/.test(id) ? Number(id) : id
 }
+
+// a string as PowerShell spells one that it reads as written
+const quoted = (text: string) => `'${text.replaceAll("'", "''")}'`
+
+// Windows starts a child of this process with its window hidden, and the browser keeps to that: started
+// by PowerShell's Start-Process it has a startup of its own, and a window that shows. PowerShell also
+// knows the screen, so the window is a strip of it down one edge. An argument that may hold a space
+// carries quotes of its own, since Start-Process adds none.
+const docked = (exe: string, profile: string, reels: Reels): string[] => [
+  'powershell',
+  '-NoProfile',
+  '-Command',
+  [
+    'Add-Type -AssemblyName System.Windows.Forms',
+    '$area = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea',
+    `$width = [int]($area.Width * ${reels.share})`,
+    `$left = ${reels.side === 'left' ? '$area.Left' : '$area.Right - $width'}`,
+    `Start-Process -Wait -FilePath ${quoted(exe)} -ArgumentList ${[
+      quoted(`"--app=${reels.url}"`),
+      quoted(`"--user-data-dir=${profile}"`),
+      '"--window-position=$left,$($area.Top)"',
+      '"--window-size=$width,$($area.Height)"',
+      ...FLAGS.map(quoted),
+    ].join(', ')}`,
+  ].join('; '),
+]
 
 const warn = ($: EngineInterface, reels: Reels, text: string) => {
   if (!reels.hasWarned) $.ui.toast(`reels: ${text}`)
@@ -84,19 +120,14 @@ const openWindow = async ($: EngineInterface, reels: Reels): Promise<Close | nul
 
   // a profile of its own makes the window a process of its own, one that can be ended without the
   // person's browser; the Instagram sign-in is kept in it
+  const profile = `${home}/.claude/reels/profile`
   const child = $.process.spawn({
-    argv: [
-      exe,
-      `--app=${reels.url}`,
-      `--user-data-dir=${home}/.claude/reels/profile`,
-      `--window-size=${WINDOW_SIZE}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      // ending the process is no crash worth offering to restore
-      '--hide-crash-restore-bubble',
-    ],
+    argv: /^[a-z]:[\\/]/i.test(exe)
+      ? docked(exe, profile, reels)
+      : [exe, `--app=${reels.url}`, `--user-data-dir=${profile}`, `--window-size=${WINDOW_SIZE}`, ...FLAGS],
   })
-  // the browser starts at the first pull and lives as long as the loop, which return() ends
+  // what was started lives as long as the loop, which return() ends, and takes the browser it started
+  // with it; nothing starts before the first pull
   void (async () => {
     try {
       for await (const _ of child);
@@ -130,7 +161,10 @@ const sync = ($: EngineInterface, reels: Reels) => {
 
 export const register: Register = (on, options) => {
   const reels: Reels = {
-    url: typeof options?.url === 'string' && /^https?:\/\//.test(options.url) ? options.url : REELS,
+    // nothing in it that would end the argument it is passed in
+    url: typeof options?.url === 'string' && /^https?:\/\/[^\s"']+$/.test(options.url) ? options.url : REELS,
+    side: options?.side === 'left' ? 'left' : 'right',
+    share: SHARES[typeof options?.width === 'string' ? options.width : ''] ?? 1 / 4,
     hasPane: options?.browser !== 'window',
     browserPath: typeof options?.browserPath === 'string' ? options.browserPath.trim() : '',
     isTurnRunning: false,
