@@ -21,6 +21,11 @@
       "name": "heads-up",
       "source": "./plugins/heads-up",
       "description": "Popup at the top right and a boxed notice above the prompt when Claude is waiting on you, a tool call fails or a long turn finishes"
+    },
+    {
+      "name": "ruin",
+      "source": "./plugins/ruin",
+      "description": "RUIN, a retro first-person shooter you play in a pane: four levels, textured walls, enemies, keys and weapons (/ruin)"
     }
   ]
 }
