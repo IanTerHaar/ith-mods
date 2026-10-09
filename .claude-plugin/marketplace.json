@@ -26,6 +26,11 @@
       "name": "ruin",
       "source": "./plugins/ruin",
       "description": "RUIN, a retro first-person shooter you play in a pane: four levels, textured walls, enemies, keys and weapons (/ruin)"
+    },
+    {
+      "name": "reels",
+      "source": "./plugins/reels",
+      "description": "Instagram Reels open while Claude is working, and close when the turn ends or Claude is waiting on you"
     }
   ]
 }

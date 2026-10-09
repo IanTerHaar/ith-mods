@@ -1,0 +1,27 @@
+{
+  "name": "reels",
+  "version": "0.1.0",
+  "author": { "name": "Ian Ter Haar" },
+  "description": "Instagram Reels open while Claude is working, and close when the turn ends or Claude is waiting on you",
+  "userConfig": {
+    "browser": {
+      "type": "string",
+      "title": "Open in",
+      "description": "auto: the Claude desktop app's browser pane where the session has one, a window of its own elsewhere (the terminal has no pane). window: always the window",
+      "default": "auto",
+      "options": ["auto", "window"]
+    },
+    "url": {
+      "type": "string",
+      "title": "Page",
+      "description": "What opens while Claude works",
+      "default": "https://www.instagram.com/reels/"
+    },
+    "browserPath": {
+      "type": "string",
+      "title": "Browser",
+      "description": "Full path of the Edge or Chrome executable the window runs in; empty finds an installed one",
+      "default": ""
+    }
+  }
+}
