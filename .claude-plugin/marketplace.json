@@ -31,6 +31,11 @@
       "name": "reels",
       "source": "./plugins/reels",
       "description": "Instagram Reels open while Claude is working, and close when the turn ends or Claude is waiting on you"
+    },
+    {
+      "name": "model-line",
+      "source": "./plugins/model-line",
+      "description": "The selected model at the end of the hint line under the prompt"
     }
   ]
 }

@@ -12,6 +12,7 @@ Personal Claude Code plugin marketplace.
 | `heads-up` | Notices for what needs your eye: Claude waiting on a permission prompt or a question, tool calls that failed, and a turn that finished after a minute or more (or stopped on an error). Each one pops up over the top right corner for a few seconds, and is kept in a box above the prompt until you press Dismiss or send the next prompt. Options: `show` (`both`, `popup` or `box`), `side` (which edge the box sits against, `left` or `right`, default `right`) and `turnAfter` (`always`, `30s`, `1m`, `2m`, `5m`, `never`) |
 | `ruin` | RUIN, a retro first-person shooter in a pane. `/ruin` opens it; click the pane to focus it. W/S or arrows move, A/D turn, Q/E strafe, Space fires, 1-3 switch weapons, X uses the exit switch, M toggles the map, R restarts the level. Four levels, textured walls, zombies, imps, demons and barons, medkits, armor, a red key, a shotgun and a chaingun, and explosive barrels. Needs a terminal or desktop surface |
 | `reels` | Instagram Reels while Claude works: they open when a turn starts and close when it ends, and while Claude is waiting on a permission prompt or a question. In the terminal they open in an Edge or Chrome window of their own, docked down one edge of the main screen (Windows), with its own profile under `~/.claude/reels`: sign in to Instagram there once, since the page is blank until you do. In the Claude desktop app they open in its browser pane, where closing leaves a blank tab. Options: `browser` (`auto` or `window`), `side` (`left` or `right`, default `right`), `width` (`1/5`, `1/4`, `1/3` or `1/2` of the screen, default `1/4`), `url` (the page, default `https://www.instagram.com/reels/`) and `browserPath` (the Edge or Chrome executable, found when empty) |
+| `model-line` | The selected model at the end of the hint line under the prompt, e.g. `? for shortcuts · Opus 5.5`. Follows `/model`, the model picker and automatic fallbacks. Terminal only for now |
 
 ## Install
 
@@ -23,6 +24,7 @@ claude plugin install file-tree@ith-mods --scope user
 claude plugin install heads-up@ith-mods --scope user
 claude plugin install ruin@ith-mods --scope user
 claude plugin install reels@ith-mods --scope user
+claude plugin install model-line@ith-mods --scope user
 ```
 
 ## Update
@@ -35,6 +37,7 @@ claude plugin update file-tree@ith-mods
 claude plugin update heads-up@ith-mods
 claude plugin update ruin@ith-mods
 claude plugin update reels@ith-mods
+claude plugin update model-line@ith-mods
 ```
 
 Bump `version` in the plugin's `plugin.json` whenever its code changes, then `/reload-plugins`.
