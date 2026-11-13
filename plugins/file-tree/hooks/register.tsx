@@ -86,7 +86,6 @@ let platform: Promise<'linux' | 'darwin' | 'win32'> | null = null
 let dirty: { root: string; files: Record<string, Change> } = { root: '', files: {} }
 let markId = 0
 let listSeq = 0
-let lastRoot = ''
 let showSize = false
 let sizeEpoch = 0
 let sizeActive = 0
@@ -260,7 +259,6 @@ async function reset($: EngineInterface, root: string, focus = false): Promise<v
   generation += 1
   blink?.cancel()
   blink = null
-  lastRoot = root
   sizeEpoch += 1
   sizeQueue = []
   await put($, () => emptyTree(root))
@@ -606,25 +604,6 @@ async function gitPaths($: EngineInterface, root: string, prefix: string, commit
   } catch {
     return []
   }
-}
-
-async function gitDir($: EngineInterface, cwd: string): Promise<string> {
-  for (let dir = cwd, i = 0; i < 64; i++) {
-    try {
-      const dot = join(dir, '.git')
-      const st = await $.fs.stat(dot)
-      if (st.kind === 'dir') return dot
-      const ref = /^gitdir:\s*(.+)$/m.exec(String(await $.fs.read(dot)))?.[1]?.trim()
-      if (ref) return resolve(dir, ref, home)
-    } catch {
-      const up = dirname(dir)
-      if (up === dir) return ''
-      dir = up
-      continue
-    }
-    return ''
-  }
-  return ''
 }
 
 async function sync($: EngineInterface, force = false): Promise<void> {
@@ -992,20 +971,6 @@ export const register: Register = (on, options) => {
     return {}
   })
 
-  on('classic.SessionStart', async ($, e, next) => {
-    const result = await next(e)
-    if (e.source === 'clear' || e.source === 'resume' || e.source === 'fork') {
-      void (async () => {
-        await loadTheme($)
-        const root = follow || !lastRoot ? await cwdOf($) : lastRoot
-        const t = await get($)
-        if (t.root !== root || t.nodes.length === 0) await reset($, root)
-      })()
-    }
-    const gd = await gitDir($, posix(e.cwd))
-    return gd ? { ...result, watchPaths: [...(result.watchPaths ?? []), join(gd, 'index'), join(gd, 'HEAD')] } : result
-  })
-
   on('classic.CwdChanged', async ($, e, next) => {
     const result = await next(e)
     void followCwd($)
@@ -1057,11 +1022,6 @@ export const register: Register = (on, options) => {
       })()
     }
     return next(context.length ? { ...e, context } : e)
-  })
-
-  on('prompt.attachment', async ($, e, next) => {
-    void settleBackground($, e.text)
-    return next(e)
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
